@@ -17,12 +17,15 @@ import java.util.logging.Logger;
 
 public final class TyshPlugin extends JavaPlugin implements Listener {
     public final Logger LOGGER = getLogger();
+    public static TyshPlugin TYSH_PLUGIN;
 
     @Override
     public void onEnable() {
         // Plugin startup logic
         LOGGER.log(Level.INFO,"TyshPlugin start up.");
-        getServer().getPluginManager().registerEvents(new TyshCompass(this), this);
+        TYSH_PLUGIN = this;
+        getServer().getPluginManager().registerEvents(new TyshCompass(), this);
+        getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
     }
 
     @Override
