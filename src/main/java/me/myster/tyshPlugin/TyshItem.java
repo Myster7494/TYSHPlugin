@@ -55,7 +55,7 @@ public class TyshItem implements Listener {
         private static final TreeMap<TyshItemName, TyshItemStack> TYSH_ITEM_STACKS = new TreeMap<>();
 
         public static void initTyshItemStacks() {
-            new TyshItemStack(TyshItemName.MAIN, "TYSH 伺服器選單", Material.RECOVERY_COMPASS, Actions::openInventory);
+            new TyshItemStack(TyshItemName.MAIN, "TYSH 伺服器選單（點擊使用）", Material.RECOVERY_COMPASS, Actions::openInventory);
             new TyshItemStack(TyshItemName.LOBBY, "前往大廳", Material.EMERALD, (player) -> {
                 Actions.bungeeTeleport(player, "lobby");
                 player.closeInventory();
@@ -70,7 +70,7 @@ public class TyshItem implements Listener {
                 player.spigot().sendMessage(
                         builder.duplicate().setText("點我加入").setColor(ChatColor.GREEN).build(),
                         builder.duplicate().setText(" Discord 群組").setColor(ChatColor.AQUA).build(),
-                        TextComponents.LINE_BREAK,
+                        TextComponents.LINE_FEED,
                         builder.duplicate().setText(discordLink).setColor(ChatColor.AQUA).build()
                 );
                 player.closeInventory();
