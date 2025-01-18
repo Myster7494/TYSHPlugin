@@ -2,14 +2,18 @@ package me.myster.tyshPlugin;
 
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ClickEvent;
+import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityExhaustionEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,6 +29,7 @@ public final class TyshPlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new TyshItem(), this);
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+        this.getCommand("tysh").setExecutor(new TyshCommand());
     }
 
     @Override
@@ -35,13 +40,20 @@ public final class TyshPlugin extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onEntityDamaged(EntityDamageEvent event) {
-        if (event.getEntityType() == EntityType.PLAYER)
+        if (event.getEntityType() == EntityType.PLAYER && event.getCause() != EntityDamageEvent.DamageCause.VOID)
             event.setCancelled(true);
     }
 
     @EventHandler
     public void onEntityExhausted(EntityExhaustionEvent event) {
         event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onPlayerInteractive(PlayerInteractEvent event) {
+        ItemStack itemStack = event.getItem();
+        if (Objects.nonNull(itemStack) && itemStack.getType() == Material.MAP)
+            event.setCancelled(true);
     }
 
     @EventHandler

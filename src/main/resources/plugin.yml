@@ -2,3 +2,8 @@ name: tyshPlugin
 version: '1.0-SNAPSHOT'
 main: me.myster.tyshPlugin.TyshPlugin
 api-version: '1.21'
+commands:
+  tysh:
+    description: TYSH
+    usage: /<command>
+    permission: tyshPlugin.tysh

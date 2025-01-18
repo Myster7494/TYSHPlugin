@@ -16,6 +16,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -32,11 +33,36 @@ public class TyshItem implements Listener {
     public static NamespacedKey TYSH_KEY;
 
     public static class TyshItemStack extends ItemStack {
+        public static class Actions {
+            public static void openInventory(Player player) {
+                Inventory inventory = Bukkit.createInventory(null, 18, "TYSH 伺服器選單");
+                inventory.setItem(0, TyshItemStack.getItemStack(TyshItemStack.TyshItemName.LOBBY));
+                inventory.setItem(1, TyshItemStack.getItemStack(TyshItemStack.TyshItemName.TYSH));
+                inventory.setItem(8, TyshItemStack.getItemStack(TyshItemStack.TyshItemName.DISCORD));
+                if (player.hasPermission("minecraft.command.gamemode")) {
+                    inventory.setItem(9, TyshItemStack.getItemStack(TyshItemStack.TyshItemName.SPECTATOR));
+                    inventory.setItem(10, TyshItemStack.getItemStack(TyshItemStack.TyshItemName.CREATIVE));
+                    inventory.setItem(11, TyshItemStack.getItemStack(TyshItemStack.TyshItemName.ADVENTURE));
+                }
+                inventory.setItem(15, TyshItemStack.getItemStack(TyshItemName.CLEAR));
+                inventory.setItem(16, TyshItemStack.getItemStack(TyshItemStack.TyshItemName.SUICIDE));
+                inventory.setItem(17, TyshItemStack.getItemStack(TyshItemStack.TyshItemName.NIGHT_VISION));
+                player.openInventory(inventory);
+            }
+
+            public static void bungeeTeleport(Player player, String dest) {
+                ByteArrayDataOutput out = ByteStreams.newDataOutput();
+                out.writeUTF("Connect");
+                out.writeUTF(dest);
+                player.sendPluginMessage(TyshPlugin.TYSH_PLUGIN, "BungeeCord", out.toByteArray());
+            }
+        }
+
         public enum TyshItemName {
             MAIN("main"), LOBBY("lobby"), TYSH("tysh"),
             DISCORD("discord"),
             SPECTATOR("spectator"), CREATIVE("creative"), ADVENTURE("adventure"),
-            NIGHT_VISION("night_vision");
+            SUICIDE("suicide"), CLEAR("clear"), NIGHT_VISION("night_vision");
 
             public final String name;
 
@@ -57,14 +83,15 @@ public class TyshItem implements Listener {
         public static void initTyshItemStacks() {
             new TyshItemStack(TyshItemName.MAIN, "TYSH 伺服器選單（點擊使用）", Material.RECOVERY_COMPASS, Actions::openInventory);
             new TyshItemStack(TyshItemName.LOBBY, "前往大廳", Material.EMERALD, (player) -> {
-                Actions.bungeeTeleport(player, "lobby");
                 player.closeInventory();
+                Actions.bungeeTeleport(player, "lobby");
             });
             new TyshItemStack(TyshItemName.TYSH, "前往桃高", Material.BRICKS, (player) -> {
-                Actions.bungeeTeleport(player, "tysh");
                 player.closeInventory();
+                Actions.bungeeTeleport(player, "tysh");
             });
             new TyshItemStack(TyshItemName.DISCORD, "前往 Discord", Material.ENDER_PEARL, (player) -> {
+                player.closeInventory();
                 String discordLink = "https://discord.gg/9MBYxXhmgA";
                 TextComponentBuilder builder = new TextComponentBuilder().setClickEvent(ClickEvent.Action.OPEN_URL, discordLink);
                 player.spigot().sendMessage(
@@ -73,31 +100,40 @@ public class TyshItem implements Listener {
                         TextComponents.LINE_FEED,
                         builder.duplicate().setText(discordLink).setColor(ChatColor.AQUA).build()
                 );
-                player.closeInventory();
             });
             {
                 TextComponent gameModeChangedText = TextComponentBuilder.create("遊戲模式已變為 ", ChatColor.GREEN);
                 TextComponentBuilder gameModeTextBuilder = new TextComponentBuilder().setColor(ChatColor.AQUA);
                 new TyshItemStack(TyshItemName.SPECTATOR, "旁觀者模式", Material.ENDER_EYE, (player) -> {
+                    player.closeInventory();
                     if (!player.hasPermission("minecraft.command.gamemode")) return;
                     player.setGameMode(GameMode.SPECTATOR);
                     player.spigot().sendMessage(gameModeChangedText, gameModeTextBuilder.duplicate().setText("旁觀者模式").build());
-                    player.closeInventory();
                 });
                 new TyshItemStack(TyshItemName.CREATIVE, "創造模式", Material.GRASS_BLOCK, (player) -> {
+                    player.closeInventory();
                     if (!player.hasPermission("minecraft.command.gamemode")) return;
                     player.setGameMode(GameMode.CREATIVE);
                     player.spigot().sendMessage(gameModeChangedText, gameModeTextBuilder.duplicate().setText("創造模式").build());
-                    player.closeInventory();
                 });
                 new TyshItemStack(TyshItemName.ADVENTURE, "冒險模式", Material.MAP, (player) -> {
+                    player.closeInventory();
                     if (!player.hasPermission("minecraft.command.gamemode")) return;
                     player.setGameMode(GameMode.ADVENTURE);
                     player.spigot().sendMessage(gameModeChangedText, gameModeTextBuilder.duplicate().setText("冒險模式").build());
-                    player.closeInventory();
                 });
             }
+            new TyshItemStack(TyshItemName.SUICIDE, "自殺(遇到任何問題請試試)", Material.NETHERITE_SWORD, (player) -> {
+                player.closeInventory();
+                player.setHealth(0);
+            });
+            new TyshItemStack(TyshItemName.CLEAR, "強制清空背包", Material.BUNDLE, (player) -> {
+                player.closeInventory();
+                player.getInventory().clear();
+                giveCompass(player);
+            });
             new TyshItemStack(TyshItemName.NIGHT_VISION, "夜視", Material.SPYGLASS, (player) -> {
+                player.closeInventory();
                 if (!player.hasPotionEffect(PotionEffectType.NIGHT_VISION)) {
                     player.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, -1, 255, false, false, true));
                     player.spigot().sendMessage(TextComponentBuilder.create("已開啟夜視", ChatColor.GREEN));
@@ -105,7 +141,6 @@ public class TyshItem implements Listener {
                     player.removePotionEffect(PotionEffectType.NIGHT_VISION);
                     player.spigot().sendMessage(TextComponentBuilder.create("已關閉夜視", ChatColor.GREEN));
                 }
-                player.closeInventory();
             });
         }
 
@@ -150,23 +185,32 @@ public class TyshItem implements Listener {
     }
 
     public static boolean isTyshItemStack(ItemStack itemStack) {
-        return Objects.isNull(itemStack) || !itemStack.hasItemMeta() || !itemStack.getItemMeta().getPersistentDataContainer().has(TYSH_KEY);
+        return Objects.nonNull(itemStack) && itemStack.hasItemMeta() && itemStack.getItemMeta().getPersistentDataContainer().has(TYSH_KEY);
     }
 
     public static String getTyshKeyValue(ItemStack itemStack) {
         return itemStack.getItemMeta().getPersistentDataContainer().get(TYSH_KEY, PersistentDataType.STRING);
     }
 
+    public static void giveCompass(Player player) {
+        ItemStack itemStack = TyshItemStack.getItemStack("main");
+        player.getInventory().setItem(0, itemStack);
+    }
+
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        ItemStack itemStack = TyshItemStack.getItemStack("main");
-        event.getPlayer().getInventory().setItem(0, itemStack);
+        giveCompass(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onPlayerRespawn(PlayerRespawnEvent event) {
+        giveCompass(event.getPlayer());
     }
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         ItemStack currentItemStack = event.getCurrentItem();
-        if (isTyshItemStack(currentItemStack)) return;
+        if (!isTyshItemStack(currentItemStack)) return;
         event.setCancelled(true);
         TyshItemStack.runAction(currentItemStack, (Player) event.getWhoClicked());
     }
@@ -174,7 +218,7 @@ public class TyshItem implements Listener {
     @EventHandler
     public void onPlayerInteractive(PlayerInteractEvent event) {
         ItemStack currentItemStack = event.getItem();
-        if (isTyshItemStack(currentItemStack)) return;
+        if (!isTyshItemStack(currentItemStack)) return;
         event.setCancelled(true);
         TyshItemStack.runAction(currentItemStack, event.getPlayer());
     }
@@ -182,31 +226,8 @@ public class TyshItem implements Listener {
     @EventHandler
     public void onPlayerDropItem(PlayerDropItemEvent event) {
         ItemStack currentItemStack = event.getItemDrop().getItemStack();
-        if (isTyshItemStack(currentItemStack)) return;
+        if (!isTyshItemStack(currentItemStack)) return;
         event.setCancelled(true);
         TyshItemStack.runAction(currentItemStack, event.getPlayer());
-    }
-
-    public static class Actions {
-        public static void openInventory(Player player) {
-            Inventory inventory = Bukkit.createInventory(null, 18, "TYSH 伺服器選單");
-            inventory.setItem(0, TyshItemStack.getItemStack(TyshItemStack.TyshItemName.LOBBY));
-            inventory.setItem(1, TyshItemStack.getItemStack(TyshItemStack.TyshItemName.TYSH));
-            inventory.setItem(8, TyshItemStack.getItemStack(TyshItemStack.TyshItemName.DISCORD));
-            if (player.hasPermission("minecraft.command.gamemode")) {
-                inventory.setItem(9, TyshItemStack.getItemStack(TyshItemStack.TyshItemName.SPECTATOR));
-                inventory.setItem(10, TyshItemStack.getItemStack(TyshItemStack.TyshItemName.CREATIVE));
-                inventory.setItem(11, TyshItemStack.getItemStack(TyshItemStack.TyshItemName.ADVENTURE));
-            }
-            inventory.setItem(17, TyshItemStack.getItemStack(TyshItemStack.TyshItemName.NIGHT_VISION));
-            player.openInventory(inventory);
-        }
-
-        public static void bungeeTeleport(Player player, String dest) {
-            ByteArrayDataOutput out = ByteStreams.newDataOutput();
-            out.writeUTF("Connect");
-            out.writeUTF(dest);
-            player.sendPluginMessage(TyshPlugin.TYSH_PLUGIN, "BungeeCord", out.toByteArray());
-        }
     }
 }
